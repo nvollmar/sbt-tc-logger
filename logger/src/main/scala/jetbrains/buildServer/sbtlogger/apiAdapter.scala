@@ -15,10 +15,10 @@
  * and limitations under the License.
  */
 
-package sbt.jetbrains.buildServer.sbtlogger
+package jetbrains.buildServer.sbtlogger
 
 import jetbrains.buildServer.sbtlogger.TCCompilerReporter.FilePosition
-import jetbrains.buildServer.sbtlogger.{TCCompilerReporter, TCLogAppender, TCLogger, TCLoggerAppender}
+import sbt.jetbrains.buildServer.sbtlogger.Unhide
 import sbt.{Def, Reference, Scope, Select, Zero}
 import xsbti.Problem
 
@@ -40,13 +40,14 @@ object apiAdapter {
   }
 
   def reporterSettings(tcLogAppender: TCLogAppender): Def.Setting[_] = {
+    import sbt.Compile
     import sbt.Keys.compile
-    Unhide.compilerReporter in compile := {
-      val defaultReporter = (Unhide.compilerReporter in compile).value
+
+    Unhide.compilerReporter := {
+      val defaultReporter = (Compile / compile / Unhide.compilerReporter).value
       new TCCompilerReporter(defaultReporter)
     }
   }
-
   def toFilePosition(position: xsbti.Position): Option[FilePosition] = {
     val path = position.sourcePath()
     val maybeLine = position.line()

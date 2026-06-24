@@ -18,9 +18,9 @@
 package jetbrains.buildServer.sbtlogger
 
 import sbt.Keys._
-import sbt.jetbrains.buildServer.sbtlogger.apiAdapter._
+import apiAdapter._
 import sbt.plugins.JvmPlugin
-import sbt.{Def, _}
+import sbt.*
 
 import scala.collection.mutable
 
@@ -79,7 +79,7 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
 
   try {
     val _: Def.Initialize[sbt.TestResultLogger] = Def.setting {
-      (testResultLogger in Test).value
+      (Test / testResultLogger).value
     }
   } catch {
     case _: java.lang.NoSuchMethodError =>
@@ -89,7 +89,7 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
   //noinspection TypeAnnotation,ConvertExpressionToSAM
   override lazy val projectSettings = if (tcFound && testResultLoggerFound)
     loggerOnSettings ++ Seq(
-      testResultLogger in(Test, test) := new TestResultLogger {
+      Test / test / testResultLogger := new TestResultLogger {
 
         import sbt.Tests._
 
@@ -104,11 +104,11 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
   else loggerOffSettings
 
 
-  lazy val loggerOnSettings: Seq[Def.Setting[_]] = Seq(
+  lazy val loggerOnSettings: Seq[Def.Setting[?]] = Seq(
     commands += tcLoggerStatusCommand,
     extraLoggers := {
-      val currentFunction: Def.ScopedKey[_] => Seq[ExtraLogger] = extraLoggers.value
-      key: ScopedKey[_] => {
+      val currentFunction: Def.ScopedKey[?] => Seq[ExtraLogger] = extraLoggers.value
+      key: ScopedKey[?] => {
         val scope: String = getScopeId(key.scope.project)
         val logger: ExtraLogger = extraLogger(tcLoggers, tcLogAppender, scope)
 
@@ -122,13 +122,13 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
     endCompilationLogger := tcLogAppender.compilationBlockEnd(getScopeId(streams.value.key.scope.project)),
     endTestCompilationLogger := tcLogAppender.compilationTestBlockEnd(getScopeId(streams.value.key.scope.project)),
 
-    compile in Compile := ((compile in Compile) dependsOn startCompilationLogger).value,
+    Compile / compile := ((Compile / compile) dependsOn startCompilationLogger).value,
 
-    compile in Test := ((compile in Test) dependsOn startTestCompilationLogger).value,
+    Test / compile := ((Test / compile) dependsOn startTestCompilationLogger).value,
 
-    tcEndCompilation := (endCompilationLogger triggeredBy (compile in Compile)).value,
+    tcEndCompilation := (endCompilationLogger triggeredBy (Compile / compile)).value,
 
-    tcEndTestCompilation := (endTestCompilationLogger triggeredBy (compile in Test)).value
+    tcEndTestCompilation := (endTestCompilationLogger triggeredBy (Test / compile)).value
   ) ++
     inConfig(Compile)(Seq(reporterSettings(tcLogAppender))) ++
     inConfig(Test)(Seq(reporterSettings(tcLogAppender)))

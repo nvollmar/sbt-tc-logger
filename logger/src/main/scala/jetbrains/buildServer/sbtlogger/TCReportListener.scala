@@ -21,7 +21,7 @@ import java.io.{PrintWriter, StringWriter}
 
 import sbt._
 import sbt.testing.{NestedTestSelector, OptionalThrowable, Status, TestSelector}
-import sbt.jetbrains.buildServer.sbtlogger.apiAdapter._
+import apiAdapter._
 
 
 class TCReportListener(ap: LogAppender) extends TestReportListener {
@@ -47,7 +47,7 @@ class TCReportListener(ap: LogAppender) extends TestReportListener {
   }
   
   def flowId: String = {
-    Thread.currentThread().getId.toString
+    Thread.currentThread().threadId.toString
   }
   
   protected def logSingleTest(event: sbt.testing.Event): Unit = {

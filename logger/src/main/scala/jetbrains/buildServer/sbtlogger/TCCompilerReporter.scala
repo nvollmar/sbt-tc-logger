@@ -18,7 +18,7 @@
 package jetbrains.buildServer.sbtlogger
 import jetbrains.buildServer.messages.serviceMessages.MapSerializerUtil
 import jetbrains.buildServer.sbtlogger.TCCompilerReporter._
-import sbt.jetbrains.buildServer.sbtlogger.apiAdapter.{ReporterAdapter, toFilePosition}
+import apiAdapter.{ReporterAdapter, toFilePosition}
 import xsbti.{Position, Problem}
 
 class TCCompilerReporter(delegate: xsbti.Reporter) extends ReporterAdapter(delegate) {

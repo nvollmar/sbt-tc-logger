@@ -8,11 +8,8 @@ crossSbtVersions := Seq("0.13.17","1.2.6")
 
 licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 
-publishArtifact in Test := false
+Test / publishArtifact := false
 publishMavenStyle := false
-bintrayOrganization := Some("jetbrains")
-bintrayRepository := "sbt-plugins"
-bintrayVcsUrl := Option("https://github.com/JetBrains/sbt-teamcity-logger")
 
 pomExtra :=
   <licenses>
@@ -23,11 +20,11 @@ pomExtra :=
     </license>
   </licenses>
 
-artifact in (Compile, assembly) := {
-  val art = (artifact in (Compile, assembly)).value
+Compile / assembly / artifact := {
+  val art = (Compile / assembly / artifact).value
   art.withClassifier(Some("assembly"))
 }
 
-addArtifact(artifact in (Compile, assembly), assembly)
+addArtifact(Compile / assembly / artifact, assembly)
 
-assemblyJarName in assembly := "sbt-teamcity-logger.jar"
+assembly / assemblyJarName := "sbt-teamcity-logger.jar"
