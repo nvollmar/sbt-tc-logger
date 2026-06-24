@@ -21,6 +21,7 @@ import jetbrains.buildServer.sbtlogger.TCCompilerReporter.FilePosition
 import sbt.jetbrains.buildServer.sbtlogger.Unhide
 import sbt.{Def, Reference, Scope, Select, Zero}
 import xsbti.Problem
+import sbt./
 
 import scala.collection.mutable
 
@@ -34,7 +35,7 @@ object apiAdapter {
     import sbt.Compile
     import sbt.Keys.compile
 
-    Unhide.compilerReporter := {
+    Unhide.compilerReporter :=  Def.uncached {
       val defaultReporter = (Compile / compile / Unhide.compilerReporter).value
       new TCCompilerReporter(defaultReporter)
     }

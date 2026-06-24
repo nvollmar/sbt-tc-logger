@@ -25,7 +25,7 @@ import sbt.*
 import sbt.Keys.*
 import sbt.internal.AppenderSupplier
 import sbt.internal.util.Appender
-import sbt.jetbrains.buildServer.sbtlogger.Unhide
+import sbt.jetbrains.buildServer.sbtlogger.{TeamCityTestResultLogger, Unhide}
 import sbt.util.*
 
 import scala.collection.mutable
@@ -96,16 +96,7 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
   //noinspection TypeAnnotation,ConvertExpressionToSAM
   override lazy val projectSettings = if (tcFound && testResultLoggerFound)
     loggerOnSettings ++ Seq(
-      Test / test / testResultLogger := new TestResultLogger {
-
-        import sbt.Tests._
-
-        def run(log: Logger, results: Output, taskName: String): Unit = {
-          //default behaviour there is
-          //TestResultLogger.SilentWhenNoTests.run(log, results, taskName)
-          //we will just ignore to prevent appearing of 'exit code 1' when test failed
-        }
-      }
+      Test / test / testResultLogger := Def.uncached { new TeamCityTestResultLogger() }
     )
   else if (tcFound) loggerOnSettings
   else loggerOffSettings
@@ -117,22 +108,27 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
       val currentFunction: AppenderSupplier = extraAppenders.value
       new AppenderSupplier {
         override def apply(key: Def.ScopedKey[?]): Seq[Appender] = {
+          val current = currentFunction(key)
           val scope: String = getScopeId(key.scope.project)
-          val log4jAppender = new TCLoggerAppender(tcLogAppender, scope)
-          log4jAppender.start()
-          Unhide.consoleAppenderFromLog4J(log4jAppender) +: currentFunction(key)
+          current.headOption match {
+            case Some(baseAppender) =>
+              val tcAppender = Unhide.teamCityAppender(name = "tc-logger-" + scope, base = baseAppender, tcLogAppender = tcLogAppender, scope = scope)
+              tcAppender +: current
+            case None =>
+              current
+          }
         }
       }
     },
     testListeners += tcTestListener,
-    
+
     startCompilationLogger := tcLogAppender.compilationBlockStart(getScopeId(streams.value.key.scope.project)),
     startTestCompilationLogger := tcLogAppender.compilationTestBlockStart(getScopeId(streams.value.key.scope.project)),
     endCompilationLogger := tcLogAppender.compilationBlockEnd(getScopeId(streams.value.key.scope.project)),
     endTestCompilationLogger := tcLogAppender.compilationTestBlockEnd(getScopeId(streams.value.key.scope.project)),
 
-    Compile / compile := (Compile / compile).dependsOn(startCompilationLogger).value,
-    Test / compile := (Test / compile).dependsOn(startTestCompilationLogger).value,
+    Compile / compile :=  Def.uncached((Compile / compile).dependsOn(startCompilationLogger).value),
+    Test / compile :=  Def.uncached((Test / compile).dependsOn(startTestCompilationLogger).value),
 
     tcEndCompilation := endCompilationLogger.triggeredBy(Compile / compile).value,
     tcEndTestCompilation := endTestCompilationLogger.triggeredBy(Test / compile).value

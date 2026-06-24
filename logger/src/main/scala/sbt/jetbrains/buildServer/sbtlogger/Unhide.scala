@@ -19,12 +19,9 @@ package sbt.jetbrains.buildServer.sbtlogger
 
 import sbt.internal.util.Appender
 
-import org.apache.logging.log4j.core.{Appender => Log4JAppender}
-import sbt.internal.util.{ConsoleAppenderFromLog4J}
-
-
 object Unhide {
   val compilerReporter = sbt.Keys.compilerReporter
 
-  def consoleAppenderFromLog4J(appender: Log4JAppender): Appender = new ConsoleAppenderFromLog4J(appender.getName, appender)
+  def teamCityAppender(name: String, base: Appender, tcLogAppender: _root_.jetbrains.buildServer.sbtlogger.LogAppender, scope: String): Appender =
+    new TeamCityAppender(name, base.properties, base.suppressedMessage, tcLogAppender, scope)
 }
