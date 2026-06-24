@@ -104,18 +104,21 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
 
   lazy val loggerOnSettings: Seq[Def.Setting[?]] = Seq(
     commands += tcLoggerStatusCommand,
+    ThisBuild / useSuperShell := !sys.env.contains("TEAMCITY_VERSION"),
     extraAppenders := {
-      val currentFunction: AppenderSupplier = extraAppenders.value
+      val previous = extraAppenders.value
+
       new AppenderSupplier {
         override def apply(key: Def.ScopedKey[?]): Seq[Appender] = {
-          val current = currentFunction(key)
-          val scope: String = getScopeId(key.scope.project)
-          current.headOption match {
-            case Some(baseAppender) =>
-              val tcAppender = Unhide.teamCityAppender(name = "tc-logger-" + scope, base = baseAppender, tcLogAppender = tcLogAppender, scope = scope)
-              tcAppender +: current
-            case None =>
-              current
+          val current = previous(key)
+          if (!sys.env.contains("TEAMCITY_VERSION")) {
+            current
+          } else {
+            val scope = getScopeId(key.scope.project)
+            current.headOption match {
+              case Some(base) => Seq(Unhide.teamCityAppender(name = "tc-logger-" + scope, base = base, tcLogAppender = tcLogAppender, scope = scope))
+              case None =>                Nil
+            }
           }
         }
       }
@@ -127,8 +130,8 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
     endCompilationLogger := tcLogAppender.compilationBlockEnd(getScopeId(streams.value.key.scope.project)),
     endTestCompilationLogger := tcLogAppender.compilationTestBlockEnd(getScopeId(streams.value.key.scope.project)),
 
-    Compile / compile :=  Def.uncached((Compile / compile).dependsOn(startCompilationLogger).value),
-    Test / compile :=  Def.uncached((Test / compile).dependsOn(startTestCompilationLogger).value),
+    Compile / compile := Def.uncached((Compile / compile).dependsOn(startCompilationLogger).value),
+    Test / compile := Def.uncached((Test / compile).dependsOn(startTestCompilationLogger).value),
 
     tcEndCompilation := endCompilationLogger.triggeredBy(Compile / compile).value,
     tcEndTestCompilation := endTestCompilationLogger.triggeredBy(Test / compile).value

@@ -45,21 +45,19 @@ class TCLogAppender extends LogAppender {
 
 
   def discoverStatus(level: sbt.Level.Value): String = {
-    val status = level match {
+    level match {
       case sbt.Level.Error => "ERROR"
       case sbt.Level.Warn => "WARNING"
       case _ => "NORMAL"
     }
-    status
   }
 
   def discoverStatus(level: String): String = {
-    val status = level match {
+    level match {
       case "ERROR" => "ERROR"
       case "WARN" => "WARNING"
       case _ => "NORMAL"
     }
-    status
   }
 
   def processSpecialErrorsMessage(message: String, flowId: String): Unit = {

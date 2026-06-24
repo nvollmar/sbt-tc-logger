@@ -11,16 +11,16 @@ final class TeamCityAppender(
                               scope: String
                             ) extends Appender {
 
-  private def flowId: String =    Thread.currentThread().threadId.toString
+  private def flowId: String = Thread.currentThread().threadId().toString
 
   override def appendLog(level: Level.Value, message: => String): Unit =
-    tcLogAppender.log(level.toString, message, flowId)
+    tcLogAppender.log(level, message, flowId)
 
   override def control(event: ControlEvent.Value, message: => String): Unit =
-    tcLogAppender.log(Level.Info.toString, message, flowId)
+    tcLogAppender.log(Level.Info, message, flowId)
 
   override def trace(t: => Throwable, traceLevel: Int): Unit =
-    tcLogAppender.log(Level.Error.toString, t.toString, flowId)
+    tcLogAppender.log(Level.Error, t.toString, flowId)
 
   override def close(): Unit = ()
 }
