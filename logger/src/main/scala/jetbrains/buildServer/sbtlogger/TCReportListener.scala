@@ -19,9 +19,8 @@ package jetbrains.buildServer.sbtlogger
 
 import java.io.{PrintWriter, StringWriter}
 
-import sbt._
+import sbt.*
 import sbt.testing.{NestedTestSelector, OptionalThrowable, Status, TestSelector}
-import apiAdapter._
 
 
 class TCReportListener(ap: LogAppender) extends TestReportListener {
@@ -45,45 +44,45 @@ class TCReportListener(ap: LogAppender) extends TestReportListener {
       w.toString
     } else ""
   }
-  
+
   def flowId: String = {
     Thread.currentThread().threadId.toString
   }
-  
+
   protected def logSingleTest(event: sbt.testing.Event): Unit = {
-      val fqn = event.fullyQualifiedName
-      val status = event.status.toString
-      val duration = event.duration
-      val throwable = event.throwable
+    val fqn = event.fullyQualifiedName
+    val status = event.status.toString
+    val duration = event.duration
+    val throwable = event.throwable
 
-      val testName = event.selector match {
-          case s: TestSelector =>
-            if (fqn == s.testName()) fqn
-            else fqn + "." + s.testName
+    val testName = event.selector match {
+      case s: TestSelector =>
+        if (fqn == s.testName()) fqn
+        else fqn + "." + s.testName
 
-          case ns: NestedTestSelector =>
-            val prefix =
-              if (fqn == ns.testName()) ""
-              else fqn + "."
-            prefix + ns.suiteId + "." + ns.testName
+      case ns: NestedTestSelector =>
+        val prefix =
+          if (fqn == ns.testName()) ""
+          else fqn + "."
+        prefix + ns.suiteId + "." + ns.testName
 
-          case _ => fqn
-      }
+      case _ => fqn
+    }
 
-      appender.testStart(s"$testName", flowId)
+    appender.testStart(s"$testName", flowId)
 
-      event.status match {
-        case Status.Success => // nothing extra to report
-        case Status.Error | Status.Failure =>
-          appender.testFailed(testName, formattedException(throwable), flowId)
-        case Status.Skipped | Status.Ignored | Status.Pending =>
-          appender.testSkipped(testName,flowId)
-        case Status.Canceled =>
-          appender.testSkipped(testName,flowId)
-      }
+    event.status match {
+      case Status.Success => // nothing extra to report
+      case Status.Error | Status.Failure =>
+        appender.testFailed(testName, formattedException(throwable), flowId)
+      case Status.Skipped | Status.Ignored | Status.Pending =>
+        appender.testSkipped(testName, flowId)
+      case Status.Canceled =>
+        appender.testSkipped(testName, flowId)
+    }
 
-      appender.testFinished(s"$testName", status, duration, flowId)
-  	}
+    appender.testFinished(s"$testName", status, duration, flowId)
+  }
 
   /** called if there was an error during test */
   def endGroup(name: String, t: Throwable): Unit = {
@@ -94,6 +93,4 @@ class TCReportListener(ap: LogAppender) extends TestReportListener {
   def endGroup(name: String, result: TestResult): Unit = {
     appender.testSuiteSuccessfulResult(name, flowId)
   }
-
-
 }

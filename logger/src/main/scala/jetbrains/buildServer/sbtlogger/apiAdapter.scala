@@ -39,7 +39,7 @@ object apiAdapter {
     appender
   }
 
-  def reporterSettings(tcLogAppender: TCLogAppender): Def.Setting[_] = {
+  def reporterSettings(tcLogAppender: TCLogAppender): Def.Setting[?] = {
     import sbt.Compile
     import sbt.Keys.compile
 

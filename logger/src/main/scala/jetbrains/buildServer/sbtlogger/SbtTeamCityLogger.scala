@@ -27,6 +27,7 @@ import scala.collection.mutable
 object SbtTeamCityLogger extends AutoPlugin with (State => State) {
 
   override def requires: Plugins = JvmPlugin
+
   override def trigger: PluginTrigger = allRequirements
 
   def apply(state: State): State = {
@@ -46,7 +47,7 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
   }
 
   // copied from sbt.internal.Load
-  private def transformSettings(thisScope: Scope, uri: URI, rootProject: URI => String, settings: Seq[Setting[_]]): Seq[Setting[_]] =
+  private def transformSettings(thisScope: Scope, uri: URI, rootProject: URI => String, settings: Seq[Setting[?]]): Seq[Setting[?]] =
     Project.transform(Scope.resolveScope(thisScope, uri, rootProject), settings)
 
   // copied from sbt.internal.SessionSettings
@@ -108,7 +109,7 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
     commands += tcLoggerStatusCommand,
     extraLoggers := {
       val currentFunction: Def.ScopedKey[?] => Seq[ExtraLogger] = extraLoggers.value
-      key: ScopedKey[?] => {
+      (key: ScopedKey[?]) => {
         val scope: String = getScopeId(key.scope.project)
         val logger: ExtraLogger = extraLogger(tcLoggers, tcLogAppender, scope)
 
@@ -116,25 +117,23 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
       }
     },
     testListeners += tcTestListener,
-
+    
     startCompilationLogger := tcLogAppender.compilationBlockStart(getScopeId(streams.value.key.scope.project)),
     startTestCompilationLogger := tcLogAppender.compilationTestBlockStart(getScopeId(streams.value.key.scope.project)),
     endCompilationLogger := tcLogAppender.compilationBlockEnd(getScopeId(streams.value.key.scope.project)),
     endTestCompilationLogger := tcLogAppender.compilationTestBlockEnd(getScopeId(streams.value.key.scope.project)),
 
-    Compile / compile := ((Compile / compile) dependsOn startCompilationLogger).value,
+    Compile / compile := (Compile / compile).dependsOn(startCompilationLogger).value,
+    Test / compile := (Test / compile).dependsOn(startTestCompilationLogger).value,
 
-    Test / compile := ((Test / compile) dependsOn startTestCompilationLogger).value,
-
-    tcEndCompilation := (endCompilationLogger triggeredBy (Compile / compile)).value,
-
-    tcEndTestCompilation := (endTestCompilationLogger triggeredBy (Test / compile)).value
+    tcEndCompilation := endCompilationLogger.triggeredBy(Compile / compile).value,
+    tcEndTestCompilation := endTestCompilationLogger.triggeredBy(Test / compile).value
   ) ++
     inConfig(Compile)(Seq(reporterSettings(tcLogAppender))) ++
     inConfig(Test)(Seq(reporterSettings(tcLogAppender)))
 
 
-  lazy val loggerOffSettings: Seq[Def.Setting[_]] = Seq(
+  lazy val loggerOffSettings: Seq[Def.Setting[?]] = Seq(
     commands += tcLoggerStatusCommand
   )
 
@@ -153,8 +152,8 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
     state
   }
 
-  private def getScopeId(scope: ScopeAxis[sbt.Reference]):String = {
-     "" + scope.hashCode()
+  private def getScopeId(scope: ScopeAxis[sbt.Reference]): String = {
+    "" + scope.hashCode()
   }
 
 }
