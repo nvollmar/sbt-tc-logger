@@ -17,10 +17,16 @@
 
 package jetbrains.buildServer.sbtlogger
 
-import sbt.Keys._
-import apiAdapter._
+import sbt.Keys.*
+import apiAdapter.*
 import sbt.plugins.JvmPlugin
 import sbt.*
+import sbt.*
+import sbt.Keys.*
+import sbt.internal.AppenderSupplier
+import sbt.internal.util.Appender
+import sbt.jetbrains.buildServer.sbtlogger.Unhide
+import sbt.util.*
 
 import scala.collection.mutable
 
@@ -107,13 +113,15 @@ object SbtTeamCityLogger extends AutoPlugin with (State => State) {
 
   lazy val loggerOnSettings: Seq[Def.Setting[?]] = Seq(
     commands += tcLoggerStatusCommand,
-    extraLoggers := {
-      val currentFunction: Def.ScopedKey[?] => Seq[ExtraLogger] = extraLoggers.value
-      (key: ScopedKey[?]) => {
-        val scope: String = getScopeId(key.scope.project)
-        val logger: ExtraLogger = extraLogger(tcLoggers, tcLogAppender, scope)
-
-        logger +: currentFunction(key)
+    extraAppenders := {
+      val currentFunction: AppenderSupplier = extraAppenders.value
+      new AppenderSupplier {
+        override def apply(key: Def.ScopedKey[?]): Seq[Appender] = {
+          val scope: String = getScopeId(key.scope.project)
+          val log4jAppender = new TCLoggerAppender(tcLogAppender, scope)
+          log4jAppender.start()
+          Unhide.consoleAppenderFromLog4J(log4jAppender) +: currentFunction(key)
+        }
       }
     },
     testListeners += tcTestListener,

@@ -17,8 +17,14 @@
 
 package sbt.jetbrains.buildServer.sbtlogger
 
-object Unhide {
+import sbt.internal.util.Appender
 
+import org.apache.logging.log4j.core.{Appender => Log4JAppender}
+import sbt.internal.util.{ConsoleAppenderFromLog4J}
+
+
+object Unhide {
   val compilerReporter = sbt.Keys.compilerReporter
 
+  def consoleAppenderFromLog4J(appender: Log4JAppender): Appender = new ConsoleAppenderFromLog4J(appender.getName, appender)
 }
